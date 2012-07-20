@@ -1,0 +1,64 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   forwardKinematics.m
+%   Tarik Tosun, Princeton University / USC Interaction Lab, 9/13/11
+% Description:
+%   Function that performs forward kinematics for a chain given the joint
+%   angles specified.  If no joint angles are given, the current joint
+%   angles of the chain are used.
+% Usage:
+%   endpoints = forwardKinematics(myChain, angles);
+%   or:
+%   endpoints = forwardKinematics(myChain);
+%
+%   This works in the X-Z PLANE!
+%
+% Last Edited:  11/26/11
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function endpoints = forwardKinematics(varargin)
+    if(nargin < 1 || nargin > 2)
+        error('wrong number of arguments');
+    end
+    obj = varargin{1};
+    if(nargin==1)
+        angles = obj.joints.angles;
+    else
+        angles = varargin{2};
+    end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%                     Simple 2D FK:                  %%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if(strcmp(obj.joints.ForwardKinematics,'2D_simple'))
+        origin = obj.origin;
+        lengths = obj.lengths;
+        
+        
+        endpoints = zeros(obj.numlinks+1, 3);
+        cumAngles = cumsum(angles);
+        epx_rel = lengths .* cos(toRadians(cumAngles));
+        epz_rel = lengths .* sin(toRadians(cumAngles));
+        epx = cumsum(epx_rel) + origin(1);
+        epy = zeros(size(epx))+ origin(2);
+        epz = cumsum(epz_rel) + origin(3);
+        
+        endpoints = [origin;epx' epy' epz'];
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%              Denavit-Hartenberg 3D FK:             %%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    elseif(strcmp(obj.joints.ForwardKinematics,'3D_DH'))
+        origin = obj.origin;
+        N = numDof(obj);
+        J = obj.joints;
+        T = cell(1,N);  %cell array of xform matrices
+        for i=1:N
+            paramFunc = J.FKparams{i}; %function computing DH params.
+            p = paramFunc(angles(i));
+            T{i} = dhMat(p);      
+        end
+        
+        
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    else
+        error('FK specifier invalid.');
+    end
+end

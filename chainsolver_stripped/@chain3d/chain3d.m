@@ -1,0 +1,109 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   chain3d.m
+%   Tarik Tosun, USC Interaction Lab, 9/9/11
+% Description:
+%   Constructor for the chain3d class using joints objects.  chain3d is
+%   still the object representation of a robotic chain in three dimensions.
+%   Joint information and forward kinematics are now defined within the
+%   joints property of the chain3d, which is a joints object.
+% Usage:
+%   myChain = chain3d([o1 o2 o3], [l1, l2,...], {'foo','bar'...}, [low1,
+%                     low2...], [hi1, hi2...], 'FK_solver_name');
+%   or:
+%   myChain = chain3d(myChain, field);
+%   or:
+%   myChain = chain3d([o1 o2 o3], [l1,l2,l3...], joints);
+%
+%   Last edited 4/11/12
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function obj = chain3d(varargin)
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%         Constructor to add in a field:      %%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if(strcmp(class(varargin{1}),'chain3d'))
+        if(nargin~=2)
+            error('Too many input arguments for field-adding constructor');
+        end
+        if(strcmp(class(varargin{2}),'chainField3d'))
+            obj = struct(varargin{1});
+            obj.chainfield = varargin{2};
+        elseif(strcmp(class(varargin{2}),'function_handle'))
+            obj = struct(varargin{1});
+            obj.anonfield = varargin{2};
+        end
+        obj = class(obj, 'chain3d');
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%         Constructor for Static Chains        %%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    elseif(nargin==2)
+        if(strcmp(varargin{2},'static_chain'))
+            ep = varargin{1};
+        else
+            error('Invalid number of args');
+        end
+        sub = [0,0,0;ep(1:end-1,:)];
+        diff = ep - sub;
+        lengths = sqrt(sum(abs(diff(2:end,:)).^2,2))';
+        
+        obj.numlinks = size(lengths,2);
+        obj.origin = ep(1,:);
+        obj.lengths = lengths;
+        obj.chainfield = [];
+        obj.anonfield = [];
+        obj.joints = 'static_chain';
+        obj.endpoints = ep;
+        obj = class(obj, 'chain3d');
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%         Constructor from Joints object:     %%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    elseif(strcmp(class(varargin{3}),'joints'))
+        if(nargin~=3)
+            error('incorrect number of input arguments for joints-based constructor');
+        end
+        origin = varargin{1};
+        lengths = varargin{2};
+        newJoints = varargin{3};
+                
+        obj.numlinks = size(lengths,2);
+        obj.origin = origin;
+        obj.lengths = lengths;
+        obj.chainfield = [];
+        obj.anonfield = [];
+        obj.joints = newJoints;
+        obj.endpoints = [];
+        
+        obj = class(obj, 'chain3d');
+        obj.endpoints = forwardKinematics(obj);
+%        obj.endpoints = forwardKinematics(obj);
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+        %%%             Usual constructor:              %%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    else
+        origin     = varargin{1};
+        lengths    = varargin{2};
+        jointNames = varargin{3};
+        jointLB    = varargin{4};
+        jointUB    = varargin{5};
+        FK         = varargin{6};
+        
+        %%% Check Arguments %%%
+        % Check vector lengths:
+        numLinks = size(lengths,2);
+        newJoints = joints(jointNames,jointLB,jointUB,FK);
+        if(size(jointUB,2)~=numLinks)
+            error('lengths vector is not the correct size.');
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%
+        obj.numlinks = numLinks;
+        obj.origin = origin;
+        obj.lengths = lengths;
+        obj.chainfield = [];
+        obj.anonfield = [];
+        obj.joints = joints(jointNames,jointLB,jointUB,FK);  %angles field gets initialized to LB
+        obj.endpoints = [];
+        
+        obj = class(obj, 'chain3d');
+        obj.endpoints = forwardKinematics(obj);
+    end
+end

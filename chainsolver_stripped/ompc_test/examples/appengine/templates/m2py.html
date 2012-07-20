@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}OMPC Matlab&copy;-to-Python compiler.{% endblock %}
+
+{% block meta %}
+    <style>
+        {{ style }}
+        #msg { color: white; font-size: 12px; }
+        #source { text-align: left; }
+        #result { color: yellow; }
+        #warning { font-size: larger; font-weight: bold; color: #ff4040; }
+        form { text-align: center; color: white; }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div>
+    <div id="msg">
+        <p>This is the online version of OMPC, an Open-source MATLAB&copy; 
+        to Python Compiler. Paste an m-file into the area as text, or upload 
+        a file. This file will be translated into Python compatible syntax. 
+        At the moment the OMPC is being tested. Until <b>October 15th 2008</b>
+        we are collecting m-files for the purpose of testing the compiler.
+        This will hopefully allow us to finalize it and remove the last 
+        incomatibilities.
+        </p>
+        
+        <p style="color: orange;">Nothing longer than 10000 characters will 
+        be saved in the database. It will be processed and translated 
+        in the full length. It came to our attention that the Google 
+        Appengine does not like how long it takes to compile some programs.
+        In that case you might get message like the following:<br />
+        <span><pre style="color: white;">Traceback (most recent call last):
+...
+    raise errors[err.application_error](err.error_detail)
+Timeout</pre></span>
+        You can either try to submit a shorter source code or retry with 
+        the original. At this point we have no other solution other than 
+        relocating the service to a system over which we have complete control.
+        </p>
+        <p id="warning">The files you are uploading will be saved in our
+        database. Please do not upload anything you wouldn't like us to see.</p>
+        <p>In the future this site will host the OMPClib. OMPClib as a Python 
+        module that unifies the packages numpy, scipy and matplotlib
+        under standardized MATLAB interface.
+        </p>
+    </div>
+    <div id="result">
+        {{ message }}
+    </div>
+    <div id="#source">
+        {{ source }}
+    </div>
+    <form enctype="multipart/form-data" action="/m2py" method="post">
+        <div><label for="mfile">M file: </label>
+        <input name="mfile" type="file" size="113" /></div>
+        or enter source code:
+        <div>
+        <textarea name="mtext" rows="25" cols="120" >
+U_ST = @(T_,S_) (L1./S_ + L3.*S_) + (L2./T_ + L4.*T_);       % (1)
+disp(U_ST);
+
+t = logspace(-2,0);
+s = logspace(-2,1);
+[T_0,S_0] = meshgrid(t, s)
+figure(1);
+title('The Spatiotemporal Uncertainty Function.')
+surfc(T_0,S_0,U_ST(T_0,S_0));
+set(gca,'XScale','log'); xlabel('log(temporal distance)');
+set(gca,'YScale','log'); ylabel('log(spatial distance)');
+
+function [out1, out2] = do_nothing(a, b, c, d)
+
+disp Nothing
+for i = 1:10     % preserved comment
+a(1:i) = rand(i,1) %do something
+end
+        </textarea></div>
+        <div><label for="ctext">colorize the syntax</label>
+        <input name="ctext" type="checkbox" checked="checked" /></div>
+        <div><input type="submit" value="Convert"></div>
+    </form>
+    </div>
+
+<p style="color: white; text-align: right;"><font size="1"><i>MATLAB</i>&copy; is a registered <i>trademark</i> of The <i>MathWorks</i>, Inc.</font></p>
+{% endblock %}

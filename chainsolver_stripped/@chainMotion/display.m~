@@ -1,0 +1,14 @@
+% display.m, Tarik Tosun
+% for chainMotion class
+% created 3/19/12
+
+function display(obj)
+    fprintf('class: %s\n',class(obj));
+    disp('properties:')
+    disp('    chain:');
+    disp(obj.chain);
+    disp('    angleHist');
+    disp(
+
+end
+

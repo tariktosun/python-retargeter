@@ -1,0 +1,52 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% roptImitation.m
+% Tarik Tosun, Princeton University
+% Description:
+%   Does recursive motion optimization given a sourecMotion and
+%   targetChain.  Implements the same functionality as motionImitation.m
+% Usage:
+%   retMotion = motionImitation(sourceMotion, targetChain,{makeImitation params});
+%   {makeImitation_params} all get passed directly to chain3d.makeImitation.
+%
+% Created 3/20/12
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function retMotion = roptImitation(sourceMotion, targetChain,numkf,thresh,engine,scaleOpt,varargin)
+    target = targetChain;    %  A buffer, so I don't touch the passed chain.
+    source = sourceMotion.chain;
+    sAngles = sourceMotion.angleHist;
+    dof = targetChain.numlinks;
+    N = sourceMotion.numFrames;
+    
+    J = -Inf*ones(1,numkf);  % J starts at minus infinity.
+    kf = [1:N/numkf:N];
+    kf = round(kf);
+    if(kf(end)-N > N/2) %make last kf last frame.
+        kf = [kf N];
+        numkf = numkf+1; % add another keyframe if to take care of gap.
+    else
+        kf(end) = N;
+    end
+    
+    a = targetChain.joints.angles;
+    tAngles= repmat(a,numkf,1);
+    
+    % opt turns frame specifications into a makeImitation call.
+    %opt = @(f,k)makeImitation(setJointAngles(source,sAngles(f,:)),...
+    %                          setJointAngles(target,tAngles(k,:)),...
+    %                          engine, scaleOpt,varargin{:});
+    n = 1; p=0;
+    optim = @(obj,n,p,c,r,varargin)opt(obj,n,p,c,r,varargin);
+                          
+    % structures of constants and returned quantities.
+    c = struct('thresh',thresh,'numKF',numkf,'kf',kf,'opt',optim,...
+                'source',source,'sAngles',sAngles,'target',target,'engine',engine,...
+                'scaleOpt',scaleOpt);%,'varargin',varargin);
+    r = struct('J',J,'tAngles',tAngles);
+    r = ropt(sourceMotion,n,p,c,r,varargin{:});
+    
+    %interpolate for motion using r.tAngles.
+    angleHist = interpolateKF(sourceMotion,kf, r.tAngles, N);
+    % make the motion and return:
+    retMotion = chainMotion(target, angleHist);
+end
