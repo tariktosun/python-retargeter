@@ -59,6 +59,7 @@ def retarget(source, source_angles, target, target_initial_angles, target_bounds
 def cost_joints_ee(angles, target, eps, EE_ratio):
     ''' joint-total-distance cost function, implemented in python, '''
     Nt = target.getNrOfSegments()
+    Ns = len(eps)-1
     ept = forwardKinematics(target,angles)
     eps = np.array(eps)
     ept = np.array(ept)
@@ -70,12 +71,12 @@ def cost_joints_ee(angles, target, eps, EE_ratio):
     rJoints = 0
     for i in range(1,Nt):
         t = ept[i,:]
-        for j in range(1,len(eps)-1):
+        for j in range(1,Ns):
             s = eps[j,:]
             rJoints += np.abs(np.linalg.norm(s-t))
 
     # normalize for number of source interior joints, multiply by ratio:
-    m = len(eps) # if EEratio = 1, EE counts as much as any other joint
+    m = Ns-1 # if EEratio = 1, EE counts as much as any other joint
     cost = rEE*m*EE_ratio + rJoints
     return cost
 
