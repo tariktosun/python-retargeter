@@ -12,7 +12,7 @@ from mlabwrap import mlab
 # background.  Nearly any matlab function may be called as: 'mlab.[function]'
 
 
-mlab.addpath(mlab.genpath('./minimal'))
+mlab.addpath(mlab.genpath('../minimal'))
 
 # ----------------------------------------------------------- #
 # Creating Kinematic Chain Models: 
